@@ -1,0 +1,41 @@
+<div class="main">
+  <div class="metadata">
+    <p>Fetch Speed: <strong> {{ FormatTime .FetchSpeed }} </strong></p>
+    <p>Analysis Speed: <strong> {{ FormatTime .AnalysisSpeed }} </strong></p>
+    <p>
+      Parallel Mode:
+      <strong> {{ if .ParallelMode }}YES{{ else }}NO{{ end }} </strong>
+    </p>
+  </div>
+  <table class="repo-table" id="repo-table">
+    <thead>
+      <tr>
+        <th>Language</th>
+        <th>Files</th>
+        <th>Lines</th>
+        <th>Blank</th>
+        <th>Comments</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range .Languages }}
+      <tr>
+        <td>
+          <img alt="{{ .Name }}" src="{{ BadgeURL .Name }}" />
+        </td>
+        <td>{{ .Files }}</td>
+        <td>{{ .Lines }}</td>
+        <td>{{ .Blank }}</td>
+        <td>{{ .Comments }}</td>
+      </tr>
+      {{ end }}
+      <tr>
+        <td>Total</td>
+        <td>{{ .TotalFiles }}</td>
+        <td>{{ .TotalLines }}</td>
+        <td>{{ .TotalBlank }}</td>
+        <td>{{ .TotalComments }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

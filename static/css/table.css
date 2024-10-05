@@ -1,0 +1,164 @@
+.main {
+  margin-top: 50px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  @media (min-width: 368px) {
+    padding: 10px;
+  }
+
+  @media (min-width: 768px) {
+    padding: 20px;
+  }
+}
+
+.repo-table {
+  max-width: 1280px;
+  border-collapse: collapse;
+  border-radius: 15px;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  color: #212529;
+  background: var(--gray-400);
+}
+
+.repo-table td {
+  font-size: 12px;
+}
+.repo-table th {
+  font-size: 14px;
+}
+
+.repo-table tr td,
+th {
+  padding-left: 5px;
+  height: 30px;
+}
+
+.repo-table thead tr:first-child {
+  background: #36304a;
+  text-align: left;
+}
+
+.repo-table tr th {
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--gray-300);
+  text-transform: capitalize;
+}
+
+.repo-table td {
+  font-size: 12px;
+}
+
+.repo-table tbody tr:nth-child(even) {
+  background-color: var(--gray-500);
+}
+
+.repo-table tbody tr:nth-last-child(1) {
+  background: #36304a !important;
+  color: var(--gray-300);
+}
+
+.repo-table tbody tr:nth-last-child(1) td:first-child {
+  font-size: 18px;
+
+  @media (min-width: 368px) {
+    font-size: 20px;
+  }
+
+  @media (min-width: 468px) {
+    font-size: 22px;
+  }
+}
+
+td img {
+  height: 20px;
+}
+
+.repo-table tr td:nth-child(4),
+td:nth-child(5),
+th:nth-child(4),
+th:nth-child(5) {
+  padding-left: 0;
+  text-align: center;
+}
+
+.metadata {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  column-gap: 20px;
+  background-color: var(--gray-400);
+  color: #212529;
+  padding: 10px;
+  border-radius: 10px 10px 0 0;
+
+  @media (min-width: 576px) {
+    flex-direction: row;
+    align-items: center;
+    padding: 20px 10px;
+  }
+}
+
+@media (min-width: 368px) {
+  .repo-table tr td,
+  th {
+    padding-left: 10px;
+    height: 40px;
+  }
+  .repo-table td {
+    font-size: 14px;
+  }
+  .repo-table th {
+    font-size: 16px;
+  }
+  td img {
+    height: 24px;
+  }
+
+  .metadata {
+    padding: 15px 10px;
+  }
+}
+
+@media (min-width: 478px) {
+  .repo-table tr td,
+  th {
+    height: 50px;
+    padding-left: 20px;
+  }
+  .repo-table td {
+    font-size: 16px;
+  }
+  .repo-table th {
+    font-size: 18px;
+  }
+  td img {
+    height: 28px;
+  }
+}
+
+@media (min-width: 768px) {
+  .repo-table tr td,
+  th {
+    height: 60px;
+    padding-left: 30px;
+  }
+  .repo-table th {
+    font-size: 20px;
+  }
+  td img {
+    height: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .repo-table tr td,
+  th {
+    padding-left: 40px;
+  }
+}
