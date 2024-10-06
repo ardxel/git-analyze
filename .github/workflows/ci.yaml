@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - test-workflow
   pull_request:
     branches:
       - main
+      - test-workflow
 
 jobs:
   go-test:
@@ -20,9 +22,6 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.22.x' 
-
-    # - name: Update certificates
-    #   run: apt-get update && apt-get install -y ca-certificates
 
     - name: Install Go dependencies
       run: go mod download
@@ -42,9 +41,6 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.22.x'
-    
-    # - name: Update certificates
-    #   run: apt-get update && apt-get install -y ca-certificates
 
     - name: Install Go dependencies
       run: go mod download
@@ -69,4 +65,22 @@ jobs:
 
     - name: Build static 
       run: npm run build
+
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up SSH
+      uses: appleboy/ssh-action@v1.1.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+            touch ~/.deploy 
+            echo 'SUCCESS' > ~/.deploy
 
