@@ -1,31 +1,18 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - main
-      - test-workflow
-  pull_request:
-    branches:
-      - main
-      - test-workflow
   workflow_run:
     workflows: [Build]
-    types:
-      - completed
+    types: [completed]
+    branches: [main, test-workflow]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-
-    - name: Debugging workflow_run
-      run: |
-        echo "Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
 
     - name: Set up SSH
       uses: appleboy/ssh-action@v1.1.0
