@@ -3,8 +3,8 @@ name: Deploy
 on:
   workflow_run:
     workflows: [Build]
-    types: [completed]
-    branches: [main, test-workflow]
+    types: 
+      - completed
 
 jobs:
   deploy:
