@@ -1,0 +1,31 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - test-workflow
+  pull_request:
+    branches:
+      - main
+      - test-workflow
+
+jobs:
+  go-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22.x' 
+
+    - name: Install Go dependencies
+      run: go mod download
+
+    - name: Run Go tests
+      run: GOGACHE=off GO_ENV=test go test -v -bench=^$ -benchmem ./pkg/...
+

@@ -1,39 +1,19 @@
-name: CI
+name: Build
 
 on:
   push:
     branches:
       - main
+      - test-workflow
   pull_request:
     branches:
       - main
+      - test-workflow
 
 jobs:
-  go-test:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.22.x' 
-
-    # - name: Update certificates
-    #   run: apt-get update && apt-get install -y ca-certificates
-
-    - name: Install Go dependencies
-      run: go mod download
-
-
-    - name: Run Go tests
-      run: GOGACHE=off GO_ENV=test go test -v -bench=^$ -benchmem ./pkg/...
-  
   go-build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -42,9 +22,6 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.22.x'
-    
-    # - name: Update certificates
-    #   run: apt-get update && apt-get install -y ca-certificates
 
     - name: Install Go dependencies
       run: go mod download
@@ -54,7 +31,7 @@ jobs:
 
   static-build:
     runs-on: ubuntu-latest
-
+    needs: go-build
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -68,5 +45,4 @@ jobs:
       run: npm ci
 
     - name: Build static 
-      run: npm run build
-
+      run: npm run build 
