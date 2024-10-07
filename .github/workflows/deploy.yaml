@@ -1,20 +1,12 @@
 name: Deploy
 
-# on:
-#   workflow_run:
-#     workflows: [Build]
-#     types: [completed]
-#     branches: [main, test-workflow]
-
 on:
-  push:
-    branches:
-      - main
-      - test-workflow
-  pull_request:
-    branches:
-      - main
-      - test-workflow
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+    branches: [main, test-workflow]
+
+
 
 jobs:
   deploy:
