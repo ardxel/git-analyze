@@ -1,0 +1,48 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - test-workflow
+  pull_request:
+    branches:
+      - main
+      - test-workflow
+
+jobs:
+  go-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22.x'
+
+    - name: Install Go dependencies
+      run: go mod download
+
+    - name: Build Go
+      run: go build -v ./...
+
+  static-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '21'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build static 
+      run: npm run build 
