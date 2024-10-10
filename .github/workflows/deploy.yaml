@@ -51,8 +51,8 @@ jobs:
         script: |
           cd ~/app
           docker-compose -f /root/app/.docker/docker-compose.prod.yml pull
-          export MAX_DISK_SIZE=${{ secrets.MAX_DISK_SIZE }}
-          export MAX_REPO_SIZE=${{ secrets.MAX_REPO_SIZE }}
+          export MAX_DISK_SIZE=${{ vars.MAX_DISK_SIZE }}
+          export MAX_REPO_SIZE=${{ vars.MAX_REPO_SIZE }}
           export SYNC_EVERY=${{ vars.SYNC_EVERY }}
           export USE_FILE_WORKERS=${{ vars.USE_FILE_WORKERS }}
           export APP_TAG=${{ github.sha }}
