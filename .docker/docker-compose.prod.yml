@@ -9,11 +9,11 @@ services:
     networks:
       - app-network
     environment:
-      - GO_ENV="production"
-      - REDIS_HOST="redis"
-      - REDIS_PORT="6379"
-      - MAIN_PORT="80"
-      - DEBUG="1"
+      - GO_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MAIN_PORT=80
+      - DEBUG=1
       - MAX_DISK_SIZE     
       - MAX_REPO_SIZE 
       - SYNC_EVERY
