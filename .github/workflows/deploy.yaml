@@ -39,7 +39,7 @@ jobs:
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: ".docker/docker-compose.prod.yml"
-        target: "~/app/"
+        target: "~/app/docker-compose.prod.yml"
 
     - name: Deploy via SSH
       uses: appleboy/ssh-action@v1.1.0
