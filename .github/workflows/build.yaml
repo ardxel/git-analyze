@@ -2,13 +2,7 @@ name: Build
 
 on:
   push:
-    branches:
-      - main
-      - test-workflow
   pull_request:
-    branches:
-      - main
-      - test-workflow
 
 jobs:
   go-build:

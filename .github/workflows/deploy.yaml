@@ -3,25 +3,71 @@ name: Deploy
 on:
   workflow_run:
     workflows: ["Build"]
+    branches: [main]
     types: 
     - completed
 
 jobs:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success'}}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login
+        run: |
+          echo ${{ secrets.PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push
+        run: |
+          docker build -f ./.docker/Dockerfile.build -t ghcr.io/${{ github.actor }}/{{ env.IMAGE_NAME }}:${{ github.sha }} .
+          docker push ghcr.io/${{ github.actor }}/{{ env.IMAGE_NAME }}:${{ github.sha }}
+
   deploy:
+    needs: ["publish"]
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+
       
-    - name: Set up SSH
+
+    - name: Copy docker compose via SSH
       uses: appleboy/ssh-action@v1.1.0
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: ".docker/docker-compose.prod.yml"
+        target: "~/app"
+
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@v0.1.7
+
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-            touch ~/.deploy 
-            echo 'SUCCESS' > ~/.deploy
+          cd ~/app
+          docker-compose -f ./docker-compose.prod.yml pull
+          export MAX_DISK_SIZE=${{ secrets.MAX_DISK_SIZE }}
+          export MAX_REPO_SIZE=${{ secrets.MAX_REPO_SIZE }}
+          export SYNC_EVERY=${{ vars.SYNC_EVERY }}
+          export USE_FILE_WORKERS=${{ vars.USE_FILE_WORKERS }}
+          export APP_TAG=${{ github.sha }}
+          docker-compose -f ./docker-compose.prod.yml up -d
+    - name: Verify deployment
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          docker ps -a
+          docker-compose -f docker-compose.prod.yml logs app
