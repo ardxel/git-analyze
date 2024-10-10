@@ -38,8 +38,8 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: ".docker/docker-compose.prod.yml"
-        target: "~/app/docker-compose.prod.yml"
+        source: "./.docker/*"
+        target: "/root/app"
 
     - name: Deploy via SSH
       uses: appleboy/ssh-action@v1.1.0
