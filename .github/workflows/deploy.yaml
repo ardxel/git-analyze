@@ -21,7 +21,7 @@ jobs:
       - name: Build and push
         run: |
           docker build -f ./.docker/Dockerfile.build -t ghcr.io/${{ github.actor }}/web-git-analyzer:${{ github.sha }} .
-          docker push ghcr.io/${{ github.actor }}/{{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ghcr.io/${{ github.actor }}/web-git-analyzer:${{ github.sha }}
 
   deploy:
     needs: ["publish"]
