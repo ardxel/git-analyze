@@ -35,7 +35,7 @@ jobs:
       
 
     - name: Copy docker compose via SSH
-      uses: appleboy/ssh-action@v1.1.0
+      uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
@@ -45,7 +45,7 @@ jobs:
         target: "~/app"
 
     - name: Deploy via SSH
-      uses: appleboy/ssh-action@v0.1.7
+      uses: appleboy/ssh-action@v1.1.0
 
       with:
         host: ${{ secrets.SSH_HOST }}
@@ -62,7 +62,7 @@ jobs:
           export APP_TAG=${{ github.sha }}
           docker-compose -f ./docker-compose.prod.yml up -d
     - name: Verify deployment
-      uses: appleboy/ssh-action@v0.1.7
+      uses: appleboy/ssh-action@v1.1.0
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
