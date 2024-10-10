@@ -29,24 +29,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-      
+    - uses: actions/checkout@v4
 
     - name: Copy docker compose via SSH
-      uses: appleboy/scp-action@master
+      uses: appleboy/scp-action@0.1.7
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: ".docker/docker-compose.prod.yml"
-        target: "~/app"
+        target: "~/app/"
 
     - name: Deploy via SSH
       uses: appleboy/ssh-action@v1.1.0
-
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
@@ -61,6 +57,7 @@ jobs:
           export USE_FILE_WORKERS=${{ vars.USE_FILE_WORKERS }}
           export APP_TAG=${{ github.sha }}
           docker-compose -f ./docker-compose.prod.yml up -d
+
     - name: Verify deployment
       uses: appleboy/ssh-action@v1.1.0
       with:
@@ -70,4 +67,5 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           docker ps -a
+          cd ~/app
           docker-compose -f docker-compose.prod.yml logs app
