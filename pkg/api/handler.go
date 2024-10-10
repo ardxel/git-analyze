@@ -31,12 +31,12 @@ func HandleGetForm(s *Server) func(*gin.Context) {
 // POST /api
 func HandleCreateTask(s *Server) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		repoOwner, _ := c.Get("repo_owner")
-		repoName, _ := c.Get("repo_name")
-		repoOwnerS := repoOwner.(string)
-		repoNameS := repoName.(string)
+		rOwnerRaw, _ := c.Get("repo_owner")
+		rNameRaw, _ := c.Get("repo_name")
+		rOwner := rOwnerRaw.(string)
+		rName := rNameRaw.(string)
 
-		repoSize, err := fetchRepoSize(repoOwnerS, repoNameS)
+		repoSize, err := fetchRepoSize(rOwner, rName)
 
 		if err != nil {
 			c.Error(NewAnalyzeError(http.StatusNotFound, err.Error()))
@@ -52,8 +52,8 @@ func HandleCreateTask(s *Server) func(c *gin.Context) {
 		repoTask := &tasks.RepoTask{
 			Status: tasks.STATUS_INIT,
 			Size:   repoSize,
-			Owner:  repoOwnerS,
-			Name:   repoNameS,
+			Owner:  rOwner,
+			Name:   rName,
 			Opts: &analyzer.Options{
 				ExcludeFilePatterns: c.PostFormArray("exclude_file_patterns[]"),
 				ExcludeDirPatterns:  c.PostFormArray("exclude_dir_patterns[]"),
@@ -94,14 +94,14 @@ func HandleTask(s *Server) func(c *gin.Context) {
 		task, ok := tasks.RepoTaskQueue.GetTask(id)
 
 		if !ok {
-			c.Error(NewTaskStatusError(task, http.StatusNotFound, "Task not found"))
+			c.Error(NewTaskStatusError(nil, http.StatusNotFound, "Task not found"))
 			return
 		}
 
 		switch action {
 		case ACTION_STATUS:
 			if task.Err != nil {
-				c.Error(NewTaskStatusError(task, http.StatusBadRequest, task.Err.Error()))
+				c.Error(NewTaskStatusError(nil, http.StatusBadRequest, task.Err.Error()))
 				return
 			}
 

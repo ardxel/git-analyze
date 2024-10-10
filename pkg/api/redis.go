@@ -23,9 +23,10 @@ type RedisDB struct {
 
 func CreateRedisDB() *RedisDB {
 	ctx := context.Background()
+	addr := fmt.Sprintf("%s:%s", config.Vars.RedisHost, config.Vars.RedisPort)
 
 	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("localhost:%s", config.Vars.RedisPort),
+		Addr:     addr,
 		Password: "",
 		DB:       0,
 	})
@@ -52,7 +53,7 @@ func CreateRedisDB() *RedisDB {
 }
 
 func (r *RedisDB) RateLimitAllow(key string) *redis_rate.Result {
-	res, err := r.rateLimiter.Allow(r.ctx, key, redis_rate.PerMinute(1))
+	res, err := r.rateLimiter.Allow(r.ctx, key, redis_rate.PerMinute(2))
 
 	if err != nil {
 		panic(err)
@@ -80,7 +81,7 @@ func (r *RedisDB) SetCache(key string, value interface{}) {
 		Ctx:   r.ctx,
 		Key:   key,
 		Value: value,
-		TTL:   time.Minute * 3,
+		TTL:   time.Minute * 5,
 	})
 
 	if err != nil {

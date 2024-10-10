@@ -49,22 +49,15 @@ func RedisRepoTaskCacheMV(s *Server) func(c *gin.Context) {
 			return
 		}
 
-		value, ok := s.Redis.GetCache(key)
+		cValue, cached := s.Redis.GetCache(key)
 
-		if ok {
-			data := value.(map[string]interface{})
+		if cached {
+			data := cValue.(map[string]interface{})
 			data["FetchSpeed"] = time.Duration(data["FetchSpeed"].(int64))
 			data["AnalysisSpeed"] = time.Duration(data["AnalysisSpeed"].(int64))
 
 			c.Header("X-Cache", "HIT")
-			// c.HTML(http.StatusOK, "table.html", data)
-			c.JSON(http.StatusOK, gin.H{
-				"id":            "",
-				"error":         false,
-				"error_message": "",
-				"cache":         true,
-				"cache_key":     key,
-			})
+			c.HTML(http.StatusOK, "table.html", data)
 			c.Abort()
 			return
 		}

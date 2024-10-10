@@ -56,12 +56,21 @@ func ErrorHandlerForAnalysingRoutes() gin.HandlerFunc {
 					"cache_key":     "",
 				})
 			case *TaskStatusError:
-				c.JSON(e.StatusCode, JSONTaskStatus{
-					TaskStatus:       e.Task.Status,
-					TaskDone:         e.Task.Status == tasks.STATUS_DONE,
-					TaskError:        true,
-					TaskErrorMessage: e.Error(),
-				})
+				if e.Task != nil {
+					c.JSON(e.StatusCode, JSONTaskStatus{
+						TaskStatus:       e.Task.Status,
+						TaskDone:         e.Task.Status == tasks.STATUS_DONE,
+						TaskError:        true,
+						TaskErrorMessage: e.Error(),
+					})
+				} else {
+					c.JSON(e.StatusCode, JSONTaskStatus{
+						TaskStatus:       tasks.STATUS_DONE,
+						TaskDone:         true,
+						TaskError:        true,
+						TaskErrorMessage: e.Error(),
+					})
+				}
 			default:
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error":         true,

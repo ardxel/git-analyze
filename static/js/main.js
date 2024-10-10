@@ -55,7 +55,7 @@ class Client {
   }
 
   /**
-   * @param {taskID} sring
+   * @param {taskID} string
    * @returns {Promise<TaskStatus>}
    */
   getTaskStatus(taskID) {
@@ -93,7 +93,7 @@ class App {
     this.#content = new Content();
 
     this.#form = new AnalyzeForm({
-      onSubmit: (e) => this.onSubmit(e),
+      onSubmit: (e) => this.createTask(e),
     });
   }
 
@@ -108,7 +108,7 @@ class App {
    * @param {SubmitEvent} event
    * @returns {void}
    */
-  onSubmit(event) {
+  createTask(event) {
     event.preventDefault();
     this.#form.disable = true;
 
@@ -174,10 +174,15 @@ class App {
       }
     };
 
+    const handleException = () => {
+      this.#content.renderError("INTERNAL_ERROR");
+      clearInterval(this.#fetchStatusInterval);
+    };
+
     return client
       .getTaskStatus(this.#taskID)
       .then(handleData)
-      .catch(() => this.#content.renderError("INTERNAL_ERROR"));
+      .catch(handleException);
   }
 
   /**

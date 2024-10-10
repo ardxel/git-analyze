@@ -16,7 +16,8 @@ type Config struct {
 	UseFileWorkers bool
 	Debug          bool
 	GoEnv          string
-	Port           string
+	MainPort       string
+	RedisHost      string
 	RedisPort      string
 }
 
@@ -85,12 +86,17 @@ func InitConfig() {
 		SyncEvery:      int32(getEnvInt("SYNC_EVERY")),
 		UseFileWorkers: getEnvBool("USE_FILE_WORKERS"),
 		Debug:          getEnvBool("DEBUG"),
-		Port:           getEnv("PORT"),
+		MainPort:       getEnv("MAIN_PORT"),
 		RedisPort:      getEnv("REDIS_PORT"),
+		RedisHost:      getEnv("REDIS_HOST"),
 		GoEnv:          getEnv("GO_ENV"),
 	}
 }
 
 func init() {
 	onceInitConfig.Do(InitConfig)
+
+	if Vars.Debug {
+		fmt.Println("Config loaded: ", Vars)
+	}
 }

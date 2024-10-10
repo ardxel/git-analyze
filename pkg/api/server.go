@@ -110,7 +110,7 @@ func (this *Server) Start() {
 	}
 
 	srv := &http.Server{
-		Addr:    ":" + config.Vars.Port,
+		Addr:    ":" + config.Vars.MainPort,
 		Handler: r,
 	}
 

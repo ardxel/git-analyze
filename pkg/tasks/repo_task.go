@@ -222,7 +222,7 @@ func (this *RepoTask) Process() {
 
 func InitMe() {
 	cache := ttlcache.New(
-		ttlcache.WithTTL[string, *RepoTask](3 * time.Minute),
+		ttlcache.WithTTL[string, *RepoTask](5 * time.Minute),
 	)
 
 	go cache.Start()
