@@ -50,13 +50,13 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd ~/app
-          docker-compose -f ./docker-compose.prod.yml pull
+          docker-compose -f /root/app/.docker/docker-compose.prod.yml pull
           export MAX_DISK_SIZE=${{ secrets.MAX_DISK_SIZE }}
           export MAX_REPO_SIZE=${{ secrets.MAX_REPO_SIZE }}
           export SYNC_EVERY=${{ vars.SYNC_EVERY }}
           export USE_FILE_WORKERS=${{ vars.USE_FILE_WORKERS }}
           export APP_TAG=${{ github.sha }}
-          docker-compose -f ./docker-compose.prod.yml up -d
+          docker-compose -f /root/app/.docker/docker-compose.prod.yml up -d
 
     - name: Verify deployment
       uses: appleboy/ssh-action@v1.1.0
@@ -67,5 +67,4 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           docker ps -a
-          cd ~/app
-          docker-compose -f docker-compose.prod.yml logs app
+          docker-compose -f /root/app/.docker/docker-compose.prod.yml logs app
