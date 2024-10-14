@@ -9,7 +9,7 @@ COPY pkg ./pkg
 COPY main.go ./main.go
 
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/app
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/app
 
 FROM node:18 AS static
 
