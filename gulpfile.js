@@ -14,6 +14,10 @@ const paths = {
     src: "./static/js/*.js",
     dest: "./dist/js",
   },
+  images: {
+    src: "./static/img/*",
+    dest: "./dist/img",
+  },
 };
 
 const styles = () => {
@@ -31,7 +35,11 @@ const scripts = () => {
     .pipe(gulp.dest(paths.scripts.dest));
 };
 
-const build = gulp.series(gulp.parallel(styles, scripts));
+const images = () => {
+  return gulp.src(paths.images.src).pipe(gulp.dest(paths.images.dest));
+};
+
+const build = gulp.series(gulp.parallel(styles, scripts, images));
 
 exports.build = build;
 exports.default = build;

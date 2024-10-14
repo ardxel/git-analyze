@@ -36,35 +36,41 @@ jobs:
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "./.docker/*"
-        target: "/root/app"
+        source: ".docker/docker-compose.prod.yml,.docker/nginx.prod.conf"
+        target: ${{ secrets.SSH_CONFIG_PATH }}
 
     - name: Deploy via SSH
       uses: appleboy/ssh-action@v1.1.0
+      env:
+        MAX_DISK_SIZE: ${{ vars.MAX_DISK_SIZE }}
+        MAX_REPO_SIZE: ${{ vars.MAX_REPO_SIZE }}
+        SYNC_EVERY: ${{ vars.SYNC_EVERY }}
+        USE_FILE_WORKERS: ${{ vars.USE_FILE_WORKERS }}
+        APP_TAG: ${{ github.sha }}
+        SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
+        SSL_PATH: ${{ vars.SSL_PATH }}
+        
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        envs: MAX_DISK_SIZE,MAX_REPO_SIZE,SYNC_EVERY,USE_FILE_WORKERS,APP_TAG, SSH_CONFIG_PATH, SSL_PATH
         script: |
-          cd ~/app
-          docker-compose -f /root/app/.docker/docker-compose.prod.yml pull
-          export MAX_DISK_SIZE=${{ vars.MAX_DISK_SIZE }}
-          export MAX_REPO_SIZE=${{ vars.MAX_REPO_SIZE }}
-          export SYNC_EVERY=${{ vars.SYNC_EVERY }}
-          export USE_FILE_WORKERS=${{ vars.USE_FILE_WORKERS }}
-          export APP_TAG=${{ github.sha }}
-          docker-compose -f /root/app/.docker/docker-compose.prod.yml up -d
+          cd "$SSH_CONFIG_PATH"
+          docker-compose -f ./docker-compose.prod.yml down
+          docker-compose -f ./docker-compose.prod.yml pull
+          docker-compose -f ./docker-compose.prod.yml up -d
 
     - name: Verify deployment
       uses: appleboy/ssh-action@v1.1.0
+      env:
+        SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        envs: SSH_CONFIG_PATH
         script: |
           docker ps -a
-          docker-compose -f /root/app/.docker/docker-compose.prod.yml logs app
+          docker-compose -f "${SSH_CONFIG_PATH}/docker-compose.prod.yml" logs app

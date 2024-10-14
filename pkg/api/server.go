@@ -89,6 +89,10 @@ func (this *Server) ConfigureHandlers(r *gin.Engine) {
 }
 
 func (this *Server) Start() {
+	if config.Vars.GoEnv == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	r := gin.Default()
 
 	r.SetFuncMap(template.FuncMap{
@@ -101,13 +105,19 @@ func (this *Server) Start() {
 	this.ConfigureMiddleware(r)
 	this.ConfigureHandlers(r)
 
+	jsDir := "./static/js"
+	cssDir := "./static/css"
+	imgDir := "./static/img"
+
 	if config.Vars.GoEnv == "production" {
-		r.Static("/css", "./dist/css")
-		r.Static("/js", "./dist/js")
-	} else {
-		r.Static("/css", "./static/css")
-		r.Static("/js", "./static/js")
+		jsDir = "./dist/js"
+		cssDir = "./dist/css"
+		imgDir = "./dist/img"
 	}
+
+	r.Static("/js", jsDir)
+	r.Static("/css", cssDir)
+	r.Static("/img", imgDir)
 
 	srv := &http.Server{
 		Addr:    ":" + config.Vars.MainPort,
