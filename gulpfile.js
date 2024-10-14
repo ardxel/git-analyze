@@ -36,7 +36,9 @@ const scripts = () => {
 };
 
 const images = () => {
-  return gulp.src(paths.images.src).pipe(gulp.dest(paths.images.dest));
+  return gulp
+    .src(paths.images.src, { encoding: false })
+    .pipe(gulp.dest(paths.images.dest));
 };
 
 const build = gulp.series(gulp.parallel(styles, scripts, images));
