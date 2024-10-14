@@ -41,11 +41,10 @@ func (s *Server) ConfigureMiddleware(r *gin.Engine) {
 		}))
 
 		cspPairs := (map[string]string{
-			"default-src": "'self'",
-			"script-src":  "'self' https://cdn.example.com https://cdnjs.cloudflare.com",
-			"style-src":   "'self' https://fonts.googleapis.com",
-			// TEST FAVICON ERROR
-			// "img-src":         "'self' data: https://img.shields.io https://github.githubassets.com",
+			"default-src":     "'self'",
+			"script-src":      "'self' https://cdn.example.com https://cdnjs.cloudflare.com",
+			"style-src":       "'self' https://fonts.googleapis.com",
+			"img-src":         "'self' data: https://img.shields.io https://github.githubassets.com",
 			"font-src":        "'self' https://fonts.gstatic.com",
 			"connect-src":     "'self'",
 			"frame-ancestors": "'self'",
