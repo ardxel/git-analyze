@@ -50,7 +50,7 @@ jobs:
         USE_FILE_WORKERS: ${{ vars.USE_FILE_WORKERS }}
         APP_TAG: ${{ github.sha }}
         SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
-        SSL_PATH: ${{ vars.SSL_PATH }}
+        SSL_PATH: ${{ secrets.SSL_PATH }}
         
       with:
         host: ${{ secrets.SSH_HOST }}
