@@ -39,6 +39,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         source: ".docker/docker-compose.prod.yml,.docker/nginx.prod.conf"
         target: ${{ secrets.SSH_CONFIG_PATH }}
+        strip_components: 1
 
     - name: Deploy via SSH
       uses: appleboy/ssh-action@v1.1.0
