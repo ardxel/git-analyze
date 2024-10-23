@@ -7,6 +7,7 @@ import (
 	"git-analyzer/pkg/tasks"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/go-github/v63/github"
@@ -92,6 +93,20 @@ type JSONTaskStatus struct {
 	TaskDone         bool   `json:"task_done"`
 	TaskError        bool   `json:"task_error"`
 	TaskErrorMessage string `json:"task_error_message"`
+}
+
+type AnalyzeResultMap struct {
+	RepoSizeLimit int64                `redis:"repo_size_limit"`
+	IsProd        bool                 `redis:"is_prod"`
+	ParallelMode  bool                 `redis:"parallel_mode"`
+	Languages     []*analyzer.Language `redis:"languages"`
+	TotalLines    int32                `redis:"total_lines"`
+	TotalFiles    int32                `redis:"total_files"`
+	TotalBlank    int32                `redis:"total_blank"`
+	TotalComments int32                `redis:"total_comments"`
+	FetchSpeed    time.Duration        `redis:"fetch_speed"`
+	AnalysisSpeed time.Duration        `redis:"analysis_speed"`
+	Error         string               `redis:"error"`
 }
 
 // GET /api/task/:id/:action

@@ -88,3 +88,28 @@ func RedisRateLimitMV(s *Server) func(*gin.Context) {
 		c.Next()
 	}
 }
+
+func CSP() func(*gin.Context) {
+	cspPairs := (map[string]string{
+		"default-src":     "'self'",
+		"script-src":      "'self' https://cdn.example.com https://cdnjs.cloudflare.com",
+		"style-src":       "'self' https://fonts.googleapis.com",
+		"img-src":         "'self' data: https://img.shields.io https://github.githubassets.com",
+		"font-src":        "'self' https://fonts.gstatic.com",
+		"connect-src":     "'self'",
+		"frame-ancestors": "'self'",
+		"object-src":      "none",
+		"base-uri":        "'self'",
+		"form-action":     "'self'",
+	})
+
+	cspValue := ""
+
+	for key, value := range cspPairs {
+		cspValue += fmt.Sprintf("%s %s; ", key, value)
+	}
+
+	return func(c *gin.Context) {
+		c.Header("Content-Security-Policy", cspValue)
+	}
+}
