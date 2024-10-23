@@ -19,6 +19,7 @@ type Config struct {
 	MainPort       string
 	RedisHost      string
 	RedisPort      string
+	GithubPAT      string
 }
 
 var Vars *Config
@@ -90,13 +91,10 @@ func InitConfig() {
 		RedisPort:      getEnv("REDIS_PORT"),
 		RedisHost:      getEnv("REDIS_HOST"),
 		GoEnv:          getEnv("GO_ENV"),
+		GithubPAT:      getEnv("GITHUB_PAT"),
 	}
 }
 
 func init() {
 	onceInitConfig.Do(InitConfig)
-
-	if Vars.Debug {
-		fmt.Println("Config loaded: ", Vars)
-	}
 }
