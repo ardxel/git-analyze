@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	githubClient = github.NewClient(nil)
+	githubClient = github.NewClient(nil).WithAuthToken(config.Vars.GithubPAT)
 	githubRegexp = regexp.MustCompile(`^/([^/]+)/([^/]+)(?:/|$)`)
 )
 
@@ -26,6 +26,15 @@ func HandleGetForm(s *Server) func(*gin.Context) {
 			IsProd:        config.Vars.GoEnv == "production",
 		})
 	}
+}
+
+type JSONTaskInit struct {
+	ID           string `json:"id"`
+	Error        bool   `json:"error"`
+	ErrorMessage string `json:"error_message"`
+	Cache        bool   `json:"cache"`
+	CacheKey     string `json:"cache_key"`
+	Position     int    `json:"position"`
 }
 
 // POST /api
@@ -62,12 +71,13 @@ func HandleCreateTask(s *Server) func(c *gin.Context) {
 
 		taskID := tasks.RepoTaskQueue.Add(repoTask)
 
-		c.JSON(http.StatusAccepted, gin.H{
-			"id":            taskID,
-			"error":         false,
-			"error_message": "",
-			"cache":         false,
-			"cache_key":     "",
+		c.JSON(http.StatusAccepted, JSONTaskInit{
+			ID:           taskID,
+			Error:        false,
+			ErrorMessage: "",
+			Cache:        false,
+			CacheKey:     "",
+			Position:     -1,
 		})
 	}
 }
