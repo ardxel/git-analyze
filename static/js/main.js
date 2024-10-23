@@ -143,7 +143,38 @@ class App {
       this.#fetchStatusInterval = setInterval(() => this.getTaskStatus(), 300);
     };
 
+    /**
+     *	repo_owner							string
+     *	repo_name								string
+     *	repo_url								string
+     *	exclude_file_patterns[] string[]
+     *	exclude_dir_patterns[]	string[]
+     */
     const formData = new FormData(this.#form.element[0]);
+
+    if (window.gtag) {
+      let repoUrl = formData.get("repo_url");
+      let repoOwner = formData.get("repo_owner");
+      let repoName = formData.get("repo_name");
+
+      if ((!repoOwner || !repoName) && repoUrl) {
+        try {
+          const url = new URL(repoUrl);
+          const parts = url.pathname.split("/");
+          repoOwner = parts[1] || "invalid";
+          repoName = parts[2] || "invalid";
+        } catch (e) {
+          repoOwner = "invalid";
+          repoName = "invalid";
+        }
+      }
+
+      gtag("event", "create_task", {
+        event_category: "analyze",
+        event_label: `${repoOwner}/${repoName}`,
+      });
+    }
+
     this.#content.renderStatus("STATUS_INIT");
 
     client
@@ -323,7 +354,7 @@ class Content {
   #elem = $("#content");
   #error = $("#error");
 
-  constructor() {}
+  constructor() { }
 
   get element() {
     return this.#elem;
@@ -392,7 +423,7 @@ class Content {
 
     $("head").append(
       $("<link>")
-        .attr("href", "css/table.css?v=" + new Date().getTime())
+        .attr("href", "css/table.css")
         .attr("rel", "stylesheet"),
     );
 
