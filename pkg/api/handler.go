@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	githubClient = github.NewClient(nil).WithAuthToken(config.Vars.GithubPAT)
+	githubClient = github.NewClient(nil).WithAuthToken(config.Vars.GithubApiPat)
 	githubRegexp = regexp.MustCompile(`^/([^/]+)/([^/]+)(?:/|$)`)
 )
 

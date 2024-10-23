@@ -51,12 +51,13 @@ jobs:
         APP_TAG: ${{ github.sha }}
         SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
         SSL_PATH: ${{ secrets.SSL_PATH }}
+        API_PAT: ${{ secrets.API_PAT }}
         
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        envs: MAX_DISK_SIZE,MAX_REPO_SIZE,SYNC_EVERY,USE_FILE_WORKERS,APP_TAG, SSH_CONFIG_PATH, SSL_PATH
+        envs: MAX_DISK_SIZE,MAX_REPO_SIZE,SYNC_EVERY,USE_FILE_WORKERS,APP_TAG, SSH_CONFIG_PATH, SSL_PATH, API_PAT 
         script: |
           cd "$SSH_CONFIG_PATH"
           docker-compose -f ./docker-compose.prod.yml down
