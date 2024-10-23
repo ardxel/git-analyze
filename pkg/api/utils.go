@@ -7,7 +7,6 @@ import (
 	"git-analyzer/pkg/config"
 	"log"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -164,6 +163,12 @@ func RepoIsExists(owner, name string) bool {
 
 	_, _, err := githubClient.Repositories.Get(ctx, owner, name)
 
+	if _, ok := getRateLimitError(err); ok {
+		return true
+	}
+
+	fmt.Println("ERROR IS EXISTS: ", err)
+
 	return err == nil
 }
 
@@ -173,12 +178,8 @@ func fetchRepoSize(owner, name string) (int64, error) {
 	ctx := context.Background()
 	repo, res, err := githubClient.Repositories.Get(ctx, owner, name)
 
-	if res.StatusCode == 403 {
-		resetTime, ok := parseRateResetTime(err)
-
-		if ok {
-			return 0, fmt.Errorf("Gihub API rate limit exceeded. Try again in %s", resetTime)
-		}
+	if errRateLimit, ok := getRateLimitError(err); ok {
+		return 0, errRateLimit
 	}
 
 	if res.StatusCode == 404 {
@@ -194,30 +195,16 @@ func fetchRepoSize(owner, name string) (int64, error) {
 	return repoSize, nil
 }
 
-func parseRateResetTime(err error) (string, bool) {
-	githubErr, ok := err.(*github.ErrorResponse)
-	if !ok {
-		return "", false
+func getRateLimitError(err error) (error, bool) {
+	if err != nil {
+		if rle, rateLimitOk := err.(*github.RateLimitError); rateLimitOk {
+			return fmt.Errorf("GitHub API rate limit exceeded. Try again in %s", rle.Rate.Reset), true
+		}
+		if arle, abuseRateLimitOk := err.(*github.AbuseRateLimitError); abuseRateLimitOk {
+			return fmt.Errorf("GitHub API rate limit exceeded. Try again in %s", arle.RetryAfter), true
+		}
 	}
-	if githubErr.Response == nil {
-		return "", false
-	}
-
-	resetHeader := githubErr.Response.Header.Get("X-RateLimit-Reset")
-	resetUnix, _ := strconv.ParseInt(resetHeader, 10, 64)
-
-	resetTime := time.Unix(resetUnix, 0)
-	now := time.Now()
-	duration := resetTime.Sub(now)
-
-	if duration > 0 {
-		minutes := int(duration.Minutes())
-		seconds := int(duration.Seconds()) % 60
-		durationStr := fmt.Sprintf("%dm%02ds", minutes, seconds)
-		return durationStr, true
-	}
-
-	return "", false
+	return nil, false
 }
 
 func getOwner(ctx *gin.Context) string {
