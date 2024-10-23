@@ -34,6 +34,8 @@ services:
       - MAX_REPO_SIZE 
       - SYNC_EVERY
       - USE_FILE_WORKERS
+      - API_PAT
+
 
   redis:
     image: "redis:alpine"
