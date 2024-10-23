@@ -1,7 +1,7 @@
 package api
 
 import (
-	"fmt"
+	"context"
 	"git-analyzer/pkg/config"
 	"log"
 	"net/http"
@@ -20,6 +20,14 @@ func New() *Server {
 		Redis: CreateRedisDB(),
 	}
 
+	// check credentials
+	ctx := context.Background()
+	_, resp, err := githubClient.Users.Get(ctx, "")
+
+	if err != nil && resp.StatusCode == http.StatusUnauthorized {
+		panic("Invalid token!")
+	}
+
 	return s
 }
 
@@ -33,35 +41,12 @@ func (s *Server) ConfigureMiddleware(r *gin.Engine) {
 
 	if config.Vars.GoEnv == "production" {
 		r.Use(gin.Recovery())
-
+		r.Use(CSP())
 		r.Use(cors.New(cors.Config{
 			AllowOrigins:     []string{"*"},
 			AllowMethods:     []string{"POST", "GET"},
 			AllowCredentials: true,
 		}))
-
-		cspPairs := (map[string]string{
-			"default-src":     "'self'",
-			"script-src":      "'self' https://cdn.example.com https://cdnjs.cloudflare.com",
-			"style-src":       "'self' https://fonts.googleapis.com",
-			"img-src":         "'self' data: https://img.shields.io https://github.githubassets.com",
-			"font-src":        "'self' https://fonts.gstatic.com",
-			"connect-src":     "'self'",
-			"frame-ancestors": "'self'",
-			"object-src":      "none",
-			"base-uri":        "'self'",
-			"form-action":     "'self'",
-		})
-
-		cspValue := ""
-
-		for key, value := range cspPairs {
-			cspValue += fmt.Sprintf("%s %s; ", key, value)
-		}
-
-		r.Use(func(c *gin.Context) {
-			c.Header("Content-Security-Policy", cspValue)
-		})
 	}
 
 	r.Use(gin.Logger())
@@ -96,8 +81,8 @@ func (this *Server) Start() {
 	r := gin.Default()
 
 	r.SetFuncMap(template.FuncMap{
-		"FormatTime": formatTime,
-		"BadgeURL":   badgeURL,
+		"FormatTime": FormatTime,
+		"BadgeURL":   BadgeURL,
 	})
 
 	r.LoadHTMLGlob("templates/*.html")
