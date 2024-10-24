@@ -57,18 +57,20 @@ func ErrorHandlerForAnalysingRoutes() gin.HandlerFunc {
 				})
 			case *TaskStatusError:
 				if e.Task != nil {
-					c.JSON(e.StatusCode, JSONTaskStatus{
-						TaskStatus:       e.Task.Status,
-						TaskDone:         e.Task.Status == tasks.STATUS_DONE,
-						TaskError:        true,
-						TaskErrorMessage: e.Error(),
+					c.JSON(e.StatusCode, TaskInfo{
+						Status:       e.Task.Status,
+						Done:         e.Task.Status == tasks.STATUS_DONE,
+						Error:        true,
+						ErrorMessage: e.Error(),
+						Result:       nil,
 					})
 				} else {
-					c.JSON(e.StatusCode, JSONTaskStatus{
-						TaskStatus:       tasks.STATUS_DONE,
-						TaskDone:         true,
-						TaskError:        true,
-						TaskErrorMessage: e.Error(),
+					c.JSON(e.StatusCode, TaskInfo{
+						Status:       tasks.STATUS_DONE,
+						Done:         true,
+						Error:        true,
+						ErrorMessage: e.Error(),
+						Result:       nil,
 					})
 				}
 			default:

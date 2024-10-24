@@ -88,13 +88,6 @@ const (
 	ACTION_RESULT = "1"
 )
 
-type JSONTaskStatus struct {
-	TaskStatus       uint8  `json:"task_status"`
-	TaskDone         bool   `json:"task_done"`
-	TaskError        bool   `json:"task_error"`
-	TaskErrorMessage string `json:"task_error_message"`
-}
-
 type AnalyzeResultMap struct {
 	RepoSizeLimit int64                `redis:"repo_size_limit"`
 	IsProd        bool                 `redis:"is_prod"`
@@ -107,6 +100,14 @@ type AnalyzeResultMap struct {
 	FetchSpeed    time.Duration        `redis:"fetch_speed"`
 	AnalysisSpeed time.Duration        `redis:"analysis_speed"`
 	Error         string               `redis:"error"`
+}
+
+type TaskInfo struct {
+	Status       uint8             `json:"task_status"`
+	Done         bool              `json:"task_done"`
+	Error        bool              `json:"task_error"`
+	ErrorMessage string            `json:"task_error_message"`
+	Result       *AnalyzeResultMap `json:"task_result"`
 }
 
 // GET /api/task/:id/:action
@@ -130,11 +131,12 @@ func HandleTask(s *Server) func(c *gin.Context) {
 				return
 			}
 
-			c.JSON(http.StatusOK, JSONTaskStatus{
-				TaskStatus:       task.Status,
-				TaskDone:         task.Status == tasks.STATUS_DONE,
-				TaskError:        false,
-				TaskErrorMessage: "",
+			c.JSON(http.StatusOK, TaskInfo{
+				Status:       task.Status,
+				Done:         task.Status == tasks.STATUS_DONE,
+				Error:        false,
+				ErrorMessage: "",
+				Result:       nil,
 			})
 		case ACTION_RESULT:
 			if task.Status != tasks.STATUS_DONE {
@@ -167,7 +169,23 @@ func HandleTask(s *Server) func(c *gin.Context) {
 				s.Redis.SetCache(keyForRedis, data)
 			}
 
-			c.HTML(http.StatusOK, "table.html", data)
+			switch c.GetHeader("Accept") {
+			case "application/json":
+				c.JSON(http.StatusOK, TaskInfo{
+					Status:       task.Status,
+					Done:         task.Status == tasks.STATUS_DONE,
+					Error:        false,
+					ErrorMessage: "",
+					Result:       data,
+				})
+				return
+			case "text/html":
+				c.HTML(http.StatusOK, "table.html", data)
+				return
+			default:
+				c.JSON(http.StatusBadRequest, NewTaskStatusError(task, http.StatusBadRequest, "Bad Accept Header"))
+			}
+
 		default:
 			c.Error(NewTaskStatusError(task, http.StatusNotFound, "Unknown action"))
 		}
