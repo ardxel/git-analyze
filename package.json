@@ -2,8 +2,9 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "scripts": {
-    "build": "gulp && exit 0"
+    "build": "./node_modules/.bin/gulp --gulpfile gulpfile.bundle.js && exit 0"
   },
   "keywords": [],
   "author": "",
@@ -14,9 +15,11 @@
     "@types/jquery": "^3.5.30",
     "autoprefixer": "^10.4.20",
     "cssnano": "^7.0.5",
-    "gulp": "^5.0.0",
+    "gulp": "^4.0.0",
     "gulp-babel": "^8.0.0",
     "gulp-postcss": "^10.0.0",
-    "gulp-terser": "^2.1.0"
+    "gulp-prettier": "^6.0.0",
+    "gulp-terser": "^2.1.0",
+    "prettier": "^3.3.3"
   }
 }

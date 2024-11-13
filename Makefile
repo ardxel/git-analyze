@@ -11,4 +11,4 @@ dev:
 	DEBUG=1 air
 
 build-static:
-	rm -rf ./dist && ./node_modules/.bin/gulp
+	rm -rf ./dist && ./node_modules/.bin/gulp --gulpfile gulpfile.bundle.js
