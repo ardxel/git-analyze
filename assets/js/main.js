@@ -1,9 +1,10 @@
-const ACTION_STATUS = 0;
-const ACTION_RESULT = 1;
+import { client } from "./client.js";
+
 const STATUS_INIT = 1;
 const STATUS_FETCHING = 2;
 const STATUS_ANALYZING = 3;
 const STATUS_DONE = 4;
+
 
 /**
  * @param {number} ms
@@ -11,86 +12,18 @@ const STATUS_DONE = 4;
  */
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- *  POST "/"
- *	@typedef {Object} AnalyzeResponse
- *	@property {string} id
- *	@property {boolean} error
- *	@property {string} error_message
- */
-
-/**
- * GET "/task/:id/:action"
- * @typedef {Object} TaskStatus
- * @property {number} task_status
- * @property {boolean} task_done
- * @property {boolean} task_error
- * @property {string} task_error_message
- */
-
-class Client {
-  /**
-   *  @param {FormData} formData
-   *  @returns {Promise<AnalyzeResponse | string>}
-   */
-  createTask(formData) {
-    return fetch("/api/task", {
-      method: "POST",
-      body: new URLSearchParams(formData),
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    }).then((response) => {
-      const contentType = response.headers.get("content-type");
-      const xCache = response.headers.get("X-Cache");
-      const cached = xCache && xCache == "HIT";
-
-      if (contentType && contentType.includes("text/html") && cached) {
-        return response.text();
-      }
-
-      return response.json();
-    });
-  }
-
-  /**
-   * @param {taskID} string
-   * @returns {Promise<TaskStatus>}
-   */
-  getTaskStatus(taskID) {
-    return fetch(`/api/task/${taskID}/${ACTION_STATUS}`, {
-      method: "GET",
-      Accept: "application/json",
-    }).then((response) => response.json());
-  }
-
-  /**
-   *	@param {taskID} string
-   *	@returns {Promise<string>}
-   */
-  getTaskResult(taskID) {
-    return fetch(`/api/task/${taskID}/${ACTION_RESULT}`, {
-      method: "GET",
-      Accept: "text/html",
-    }).then((response) => response.text());
-  }
-}
-
-const client = new Client();
-
 class App {
   /** @type {ReturnType<typeof setInterval>} */
   #fetchStatusInterval;
   #taskID = "";
   /** @type {AnalyzeForm} */
   #form = null;
-  /** @type {Content} */
-  #content = null;
+  /** @type {ResponseLayout} */
+  #resLayout = null;
   #hasAccess = true;
 
   constructor() {
-    this.#content = new Content();
+    this.#resLayout = new ResponseLayout();
 
     this.#form = new AnalyzeForm({
       onSubmit: (e) => this.createTask(e),
@@ -119,19 +52,20 @@ class App {
     this.#hasAccess = false;
 
     /**
-     * @param {AnalyzeResponse | string} data
+     * @param {import("./client.js").TaskInitResponse | string} data
      */
     const handle = (data) => {
-      if (typeof data == "string") {
-        this.#content.renderAnalysisResult(data).then(() => {
-          this.#hasAccess = true;
-          this.#form.disable = false;
-        });
-        return;
-      }
+      // if (typeof data == "string") {
+      //   this.#resLayout.renderResutlHTML(data).then(() => {
+      //     this.#hasAccess = true;
+      //     this.#form.disable = false;
+      //   });
+      //   return;
+      // }
 
-      if (data.error) {
-        this.#content.renderError(data.error_message);
+
+      if (typeof data === "object" && data.error) {
+        this.#resLayout.renderError(data.error_message);
         this.#form.disable = false;
         this.#hasAccess = true;
         return;
@@ -144,12 +78,22 @@ class App {
     };
 
     /**
-     *	repo_owner							string
-     *	repo_name								string
-     *	repo_url								string
-     *	exclude_file_patterns[] string[]
-     *	exclude_dir_patterns[]	string[]
+     *	@callback TypeFnGet
+     *	@param {keyof FormDataTsk} name 
+     *	@returns {FormDataTsk[name]}
      */
+
+    /**
+     *	@typedef {Object} FormDataTsk
+     *	@property {string} repo_owner
+     *	@property {string} repo_name
+     *	@property {string} repo_url
+     *	@property {Array<string>} exclude_file_patterns
+     *	@property {Array<string>} exclude_dir_patterns
+     *	@property {TypeFnGet} get
+     */
+
+    /** @type {FormDataTsk} */
     const formData = new FormData(this.#form.element[0]);
 
     if (window.gtag) {
@@ -175,21 +119,24 @@ class App {
       });
     }
 
-    this.#content.renderStatus("STATUS_INIT");
+    this.#resLayout.renderStatus(STATUS_INIT);
 
     client
       .createTask(formData)
       .then(handle)
-      .catch(() => this.#content.renderError("INTERNAL_ERROR"));
+      .catch(() => this.#resLayout.renderError("INTERNAL_ERROR"));
   }
 
+  /**
+   * @returns {Promise<void>}
+   */
   getTaskStatus() {
     /**
-     * @param {Partial<TaskStatus>} data
+     * @param {Partial<import("./client.js").TaskStatusResponse>} data
      * @returns {void}
      */
     const handleData = (data) => {
-      this.#content.renderStatus(data.task_status);
+      this.#resLayout.renderStatus(data.task_status);
 
       if (data.task_done) {
         clearInterval(this.#fetchStatusInterval);
@@ -197,7 +144,7 @@ class App {
         if (data.task_error) {
           this.#form.disable = false;
           this.#hasAccess = false;
-          this.#content.renderError(data.task_error_message);
+          this.#resLayout.renderError(data.task_error_message);
           return;
         }
 
@@ -206,7 +153,7 @@ class App {
     };
 
     const handleException = () => {
-      this.#content.renderError("INTERNAL_ERROR");
+      this.#resLayout.renderError("INTERNAL_ERROR");
       clearInterval(this.#fetchStatusInterval);
     };
 
@@ -220,17 +167,33 @@ class App {
    * @returns {Promise<void>}
    */
   getTaskResult() {
+    /**
+     * @param {import("./client.js").TaskResult | string} data
+     */
     const handle = (data) => {
-      this.#content.renderAnalysisResult(data).then(() => {
+      if (data.task_error) {
+        this.#form.disable = false;
+        this.#hasAccess = false;
+        this.#resLayout.renderError(data.task_error_message);
+        return;
+      }
+
+      $("head").append(
+        $("<link>")
+          .attr("href", "css/table.css")
+          .attr("rel", "stylesheet"),
+      );
+
+      this.#resLayout.renderResultJSON(data.task_result).then(() => {
         this.#hasAccess = true;
         this.#form.disable = false;
-      });
+      })
     };
 
     return client
-      .getTaskResult(this.#taskID)
+      .getTaskResult(this.#taskID, "application/json")
       .then(handle)
-      .catch(() => this.#content.renderError("INTERNAL_ERROR"));
+      .catch(() => this.#resLayout.renderError("INTERNAL_ERROR"));
   }
 }
 
@@ -253,12 +216,9 @@ class AnalyzeForm {
 
   constructor(props) {
     this.props = props;
-    this.#onReady();
-  }
 
-  #onReady() {
     this.#elem.on("submit", (e) => this.props.onSubmit(e));
-    $("#btn-option").on("click", () => this.toggleOptionGroup());
+    $("#btn-option").on("click", () => $("#options").toggleClass("hidden"));
 
     $("#option-group-file")
       .find(".input-option")
@@ -338,10 +298,6 @@ class AnalyzeForm {
     return placeholders[Math.floor(Math.random() * placeholders.length)] || "";
   }
 
-  toggleOptionGroup() {
-    $("#options").toggleClass("hidden");
-  }
-
   /**
    * @param {boolean} value
    */
@@ -350,7 +306,7 @@ class AnalyzeForm {
   }
 }
 
-class Content {
+class ResponseLayout {
   #elem = $("#content");
   #error = $("#error");
 
@@ -417,15 +373,13 @@ class Content {
   /**
    * @param {string} result
    * @returns {Promise<void>}
+   * @description render result by html response
+   * @deprecated
    */
-  renderAnalysisResult(result) {
+  renderResutlHTML(result) {
     this.#error.addClass("hidden");
 
-    $("head").append(
-      $("<link>")
-        .attr("href", "css/table.css")
-        .attr("rel", "stylesheet"),
-    );
+
 
     return wait(1000)
       .then(() => {
@@ -435,6 +389,57 @@ class Content {
       .then(() => {
         $("html").animate({ scrollTop: $("#repo-table").offset().top }, 350);
       });
+  }
+
+  /**
+  *	@param {import("./client.js").TaskResult} data
+  *	@returns {Promise<void>}
+  *	@description render result by json response
+  */
+  renderResultJSON(data) {
+    this.#error.addClass("hidden")
+
+    return wait()
+      .then(() => {
+        let metadata = $("<div>").addClass("metadata")
+          .append(`<p>Fetch Speed: <strong>${data.fetch_speed_str || "unknown"}</strong></p>`)
+          .append(`<p>Analysis Speed: <strong>${data.analysis_speed_str || "unknown"}</strong></p>`)
+          .append(`<p>Parallel Mode: <strong>${data.parallel_mode || false}</strong></p>`)
+
+        let thead = $("<thead>").append(`<tr>
+					<th>Language</th>
+					<th>Files</th>
+					<th>Lines</th>
+					<th>Blank</th>
+					<th>Comments</th>
+				</tr>`)
+
+        let rows = data.languages.map((lang) => `<tr>
+					<td><img src="${lang.badge_url}"/></td>
+					<td>${lang.files}</td>	
+					<td>${lang.lines}</td>	
+					<td>${lang.blank}</td>	
+					<td>${lang.comments}</td>	
+					</tr>`)
+
+        rows.push(`<tr>
+					<td>TOTAL</td>
+					<td>${data.total_files}</td>	
+					<td>${data.total_lines}</td>	
+					<td>${data.total_blank}</td>	
+					<td>${data.total_comments}</td>	
+					</tr>`)
+
+        let tbody = $("<tbody>").append(rows)
+
+        let table = $("<table>")
+          .addClass("repo-table")
+          .attr("id", "repo-table")
+          .append(thead, tbody)
+
+        this.#elem.html($(`<div>`).addClass("main").append(metadata, table))
+        $("#form").removeClass("hidden")
+      }).then(() => $("html").animate({ scrollTop: $("#repo-table").offset().top }, 350))
   }
 }
 
