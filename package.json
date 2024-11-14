@@ -4,7 +4,8 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "build": "./node_modules/.bin/gulp --gulpfile gulpfile.bundle.js && exit 0"
+    "build": "./node_modules/.bin/gulp --gulpfile gulpfile.bundle.js && exit 0",
+    "prettier": "./node_modules/.bin/gulp --gulpfile gulpfile.pretty.js && exit 0"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +16,7 @@
     "@types/jquery": "^3.5.30",
     "autoprefixer": "^10.4.20",
     "cssnano": "^7.0.5",
+    "del": "^8.0.0",
     "gulp": "^4.0.0",
     "gulp-babel": "^8.0.0",
     "gulp-postcss": "^10.0.0",

@@ -5,6 +5,7 @@ import cssnano from 'cssnano';
 import terser from 'gulp-terser';
 import babel from 'gulp-babel';
 import path from 'path';
+import * as del from 'del';
 
 const assetsPath = 'assets';
 const distPath = 'dist';
@@ -31,7 +32,7 @@ const styles = () => {
   return gulp
     .src(paths.styles.src)
     .pipe(postcss([autoprefixer(), cssnano()]))
-    .pipe(paths.styles.dest);
+    .pipe(gulp.dest(paths.styles.dest));
 };
 
 const scripts = () => {
@@ -39,17 +40,22 @@ const scripts = () => {
     .src(paths.scripts.src)
     .pipe(babel({ presets: ['@babel/preset-env'] }))
     .pipe(terser({ mangle: true, toplevel: true }))
-    .pipe(paths.scripts.dest);
+    .pipe(gulp.dest(paths.scripts.dest));
 };
 
 const images = () => {
-  return gulp.src(paths.images.src, { encoding: false }).pipe(paths.images.dest);
+  return gulp.src(paths.images.src, { encoding: false }).pipe(gulp.dest(paths.images.dest));
 };
 
 const html = () => {
-  return gulp.src(paths.html.src).pipe(paths.html.dest);
+  return gulp.src(paths.html.src).pipe(gulp.dest(paths.html.dest));
 };
 
-const build = gulp.series(gulp.parallel(styles, scripts, images, html));
+const clean = (cb) => {
+  del.deleteSync(distPath);
+  cb();
+};
+
+const build = gulp.series(clean, gulp.parallel(styles, scripts, images, html));
 
 export default build;

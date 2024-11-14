@@ -12,3 +12,4 @@ dev:
 
 build-static:
 	rm -rf ./dist && ./node_modules/.bin/gulp --gulpfile gulpfile.bundle.js
+
