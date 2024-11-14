@@ -11,6 +11,7 @@ type Language struct {
 	Comments int32  `json:"comments" redis:"comments"`
 	Lines    int32  `json:"lines" redis:"lines"`
 	Files    int32  `json:"files" redis:"files"`
+	BadgeUrl string `json:"badge_url" redis:"badge_url"`
 }
 
 func NewLanguage(name string) *Language {

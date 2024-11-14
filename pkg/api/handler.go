@@ -18,10 +18,26 @@ var (
 	githubRegexp = regexp.MustCompile(`^/([^/]+)/([^/]+)(?:/|$)`)
 )
 
+type ResponseData struct {
+	RepoSizeLimit   int64                `redis:"repo_size_limit" json:"repo_size_limit"`
+	IsProd          bool                 `redis:"is_prod" json:"is_prod"`
+	ParallelMode    bool                 `redis:"parallel_mode" json:"parallel_mode"`
+	Languages       []*analyzer.Language `redis:"languages" json:"languages"`
+	TotalLines      int32                `redis:"total_lines" json:"total_lines"`
+	TotalFiles      int32                `redis:"total_files" json:"total_files"`
+	TotalBlank      int32                `redis:"total_blank" json:"total_blank"`
+	TotalComments   int32                `redis:"total_comments" json:"total_comments"`
+	FetchSpeed      time.Duration        `redis:"fetch_speed" json:"fetch_speed"`
+	AnalysisSpeed   time.Duration        `redis:"analysis_speed" json:"analysis_speed"`
+	FetchSpeedStr   string               `redis:"fetch_speed_str" json:"fetch_speed_str"`
+	AnalysisSpeeStr string               `redis:"analysis_speed_str" json:"analysis_speed_str"`
+	Error           string               `redis:"error" json:"error"`
+}
+
 // GET /
 func HandleGetForm(s *Server) func(*gin.Context) {
 	return func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", AnalyzeResultMap{
+		c.HTML(http.StatusOK, "index.html", ResponseData{
 			RepoSizeLimit: config.Vars.MaxRepoSize, // MB
 			ParallelMode:  config.Vars.UseFileWorkers,
 			IsProd:        config.Vars.GoEnv == "production",
@@ -29,7 +45,7 @@ func HandleGetForm(s *Server) func(*gin.Context) {
 	}
 }
 
-type JSONTaskInit struct {
+type TaskInit struct {
 	ID           string `json:"id"`
 	Error        bool   `json:"error"`
 	ErrorMessage string `json:"error_message"`
@@ -72,7 +88,7 @@ func HandleCreateTask(s *Server) func(c *gin.Context) {
 
 		taskID := tasks.RepoTaskQueue.Add(repoTask)
 
-		c.JSON(http.StatusAccepted, JSONTaskInit{
+		c.JSON(http.StatusAccepted, TaskInit{
 			ID:           taskID,
 			Error:        false,
 			ErrorMessage: "",
@@ -88,30 +104,15 @@ const (
 	ACTION_RESULT = "1"
 )
 
-type AnalyzeResultMap struct {
-	RepoSizeLimit int64                `redis:"repo_size_limit"`
-	IsProd        bool                 `redis:"is_prod"`
-	ParallelMode  bool                 `redis:"parallel_mode"`
-	Languages     []*analyzer.Language `redis:"languages"`
-	TotalLines    int32                `redis:"total_lines"`
-	TotalFiles    int32                `redis:"total_files"`
-	TotalBlank    int32                `redis:"total_blank"`
-	TotalComments int32                `redis:"total_comments"`
-	FetchSpeed    time.Duration        `redis:"fetch_speed"`
-	AnalysisSpeed time.Duration        `redis:"analysis_speed"`
-	Error         string               `redis:"error"`
-}
-
 type TaskInfo struct {
-	Status       uint8             `json:"task_status"`
-	Done         bool              `json:"task_done"`
-	Error        bool              `json:"task_error"`
-	ErrorMessage string            `json:"task_error_message"`
-	Result       *AnalyzeResultMap `json:"task_result"`
+	Status       uint8         `json:"task_status"`
+	Done         bool          `json:"task_done"`
+	Error        bool          `json:"task_error"`
+	ErrorMessage string        `json:"task_error_message"`
+	Result       *ResponseData `json:"task_result"`
 }
 
 // GET /api/task/:id/:action
-// TODO: Add data about task queue
 func HandleTask(s *Server) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -151,7 +152,7 @@ func HandleTask(s *Server) func(c *gin.Context) {
 				return
 			}
 
-			data := &AnalyzeResultMap{
+			data := &ResponseData{
 				RepoSizeLimit: config.Vars.MaxRepoSize,
 				ParallelMode:  config.Vars.UseFileWorkers,
 				Languages:     task.Result.Languages,
@@ -171,6 +172,14 @@ func HandleTask(s *Server) func(c *gin.Context) {
 
 			switch c.GetHeader("Accept") {
 			case "application/json":
+
+				for _, lang := range data.Languages {
+					lang.BadgeUrl = BadgeURL(lang.Name)
+				}
+
+				data.FetchSpeedStr = FormatTime(data.FetchSpeed)
+				data.AnalysisSpeeStr = FormatTime(data.AnalysisSpeed)
+
 				c.JSON(http.StatusOK, TaskInfo{
 					Status:       task.Status,
 					Done:         task.Status == tasks.STATUS_DONE,
@@ -183,7 +192,7 @@ func HandleTask(s *Server) func(c *gin.Context) {
 				c.HTML(http.StatusOK, "table.html", data)
 				return
 			default:
-				c.JSON(http.StatusBadRequest, NewTaskStatusError(task, http.StatusBadRequest, "Bad Accept Header"))
+				c.Error(NewTaskStatusError(task, http.StatusBadRequest, "Bad Accept Header"))
 			}
 
 		default:

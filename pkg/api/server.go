@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"git-analyzer/pkg/config"
 	"log"
 	"net/http"
+	"path/filepath"
 	"text/template"
 
 	"github.com/gin-contrib/cors"
@@ -16,30 +18,28 @@ type Server struct {
 }
 
 func New() *Server {
-	s := &Server{
+	return &Server{
 		Redis: CreateRedisDB(),
 	}
+}
 
-	// check credentials
+func (s *Server) CheckCredentials() error {
 	ctx := context.Background()
 	_, resp, err := githubClient.Users.Get(ctx, "")
-
 	if err != nil && resp.StatusCode == http.StatusUnauthorized {
-		panic("Invalid token!")
+		return fmt.Errorf("Invalid token!")
+		// panic("Invalid token!")
 	}
+	return nil
+}
 
-	return s
+func (s *Server) IsProduction() bool {
+	return config.Vars.GoEnv == "production"
 }
 
 func (s *Server) ConfigureMiddleware(r *gin.Engine) {
-	if config.Vars.GoEnv == "development" {
-		r.Use(func(c *gin.Context) {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-			c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET")
-		})
-	}
-
-	if config.Vars.GoEnv == "production" {
+	isProd := s.IsProduction()
+	if isProd {
 		r.Use(gin.Recovery())
 		r.Use(CSP())
 		r.Use(cors.New(cors.Config{
@@ -48,33 +48,53 @@ func (s *Server) ConfigureMiddleware(r *gin.Engine) {
 			AllowCredentials: true,
 		}))
 	}
-
 	r.Use(gin.Logger())
 }
 
-func (this *Server) ConfigureHandlers(r *gin.Engine) {
-	r.GET("/", HandleGetForm(this))
-
+func (s *Server) ConfigureHandlers(r *gin.Engine) {
+	r.GET("/", HandleGetForm(s))
 	apiGroup := r.Group("/api")
 
 	{
 		apiGroup.Use(ErrorHandlerForAnalysingRoutes())
 
 		createTaskHandlers := []gin.HandlerFunc{
-			RedisRateLimitMV(this),
-			ValidateFormMV(this),
-			RedisRepoTaskCacheMV(this),
-			HandleCreateTask(this),
+			// RedisRateLimitMV(this),
+			ValidateFormMV(s),
+			// RedisRepoTaskCacheMV(this),
+			HandleCreateTask(s),
 		}
 
 		apiGroup.POST("/task", createTaskHandlers...)
-		apiGroup.GET("/task/:id/:action", HandleTask(this))
+		apiGroup.GET("/task/:id/:action", HandleTask(s))
+	}
+}
+
+func (s *Server) ConfigureStatic(r *gin.Engine) {
+	isProd := s.IsProduction()
+	statics := [4]string{"assets/js", "assets/css", "assets/img", "assets/templates"}
+
+	if isProd {
+		for i, path := range statics {
+			statics[i] = filepath.Join("dist", filepath.Base(path))
+		}
+	}
+
+	r.LoadHTMLGlob(fmt.Sprintf("%s/*.html", statics[3]))
+	for _, static := range statics[:3] {
+		r.Static("/"+filepath.Base(static), static)
 	}
 
 }
 
-func (this *Server) Start() {
-	if config.Vars.GoEnv == "production" {
+func (s *Server) Start() {
+	if err := s.CheckCredentials(); err != nil {
+		panic(err.Error())
+	}
+
+	isProd := s.IsProduction()
+
+	if isProd {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -85,31 +105,16 @@ func (this *Server) Start() {
 		"BadgeURL":   BadgeURL,
 	})
 
-	r.LoadHTMLGlob("templates/*.html")
+	s.ConfigureMiddleware(r)
+	s.ConfigureHandlers(r)
+	s.ConfigureStatic(r)
 
-	this.ConfigureMiddleware(r)
-	this.ConfigureHandlers(r)
-
-	jsDir := "./static/js"
-	cssDir := "./static/css"
-	imgDir := "./static/img"
-
-	if config.Vars.GoEnv == "production" {
-		jsDir = "./dist/js"
-		cssDir = "./dist/css"
-		imgDir = "./dist/img"
-	}
-
-	r.Static("/js", jsDir)
-	r.Static("/css", cssDir)
-	r.Static("/img", imgDir)
-
-	srv := &http.Server{
+	srvr := &http.Server{
 		Addr:    ":" + config.Vars.MainPort,
 		Handler: r,
 	}
 
-	if err := srv.ListenAndServe(); err != nil {
+	if err := srvr.ListenAndServe(); err != nil {
 		log.Printf("Failed to start server: %v", err)
 	}
 }
