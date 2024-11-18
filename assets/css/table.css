@@ -50,6 +50,39 @@ th {
   text-transform: capitalize;
 }
 
+.theader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theader .th-buttons {
+  visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+thead tr th:hover .th-buttons {
+  visibility: visible;
+}
+
+.th-buttons .btn-sort {
+  border: none;
+  cursor: pointer;
+  background: inherit;
+}
+
+.btn-sort svg {
+  fill: var(--gray-400);
+  width: 14px;
+  height: 14px;
+}
+
+.btn-sort:hover:focus svg {
+  fill: white;
+}
+
 .repo-table td {
   font-size: 12px;
 }
@@ -82,7 +115,7 @@ td img {
 .repo-table tr td:nth-child(4),
 td:nth-child(5),
 th:nth-child(4),
-th:nth-child(5) {
+th:nth-child(5) span {
   padding-left: 0;
   text-align: center;
 }
@@ -147,6 +180,12 @@ th:nth-child(5) {
   th {
     height: 60px;
     padding-left: 30px;
+  }
+  thead tr th:nth-child(4) .theader {
+    justify-content: center;
+  }
+  thead tr th:nth-child(5) .theader {
+    justify-content: center;
   }
   .repo-table th {
     font-size: 20px;
