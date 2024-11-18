@@ -1,11 +1,11 @@
 name: Deploy
 
 on:
-  workflow_run:
-    workflows: ["Build"]
-    branches: [main]
-    types: 
-    - completed
+  push:
+    branches:
+      - "main"
+    tags:
+      - "v*.*.*"
 
 jobs:
   publish:
@@ -13,15 +13,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Login
-        run: |
-          echo ${{ secrets.PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT }}
+      - name: Docker meta
+        uses: docker/metadata-action@v5
+        with:
+          images: "${{ github.actor }}/web-git-analyzer"
+          tags: |
+            type=semver,pattern={{version}}
+            type=ref,event=branch,pattern=latest
       - name: Build and push
-        run: |
-          docker build -f ./.docker/Dockerfile.build -t ghcr.io/${{ github.actor }}/web-git-analyzer:${{ github.sha }} .
-          docker push ghcr.io/${{ github.actor }}/web-git-analyzer:${{ github.sha }}
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          file: ./.docker/Dockerfile.build
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
     needs: ["publish"]
@@ -29,50 +45,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Copy docker compose via SSH
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: ".docker/docker-compose.prod.yml,.docker/nginx.prod.conf"
-        target: ${{ secrets.SSH_CONFIG_PATH }}
-        strip_components: 1
+      - name: Copy docker compose via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: ".docker/docker-compose.prod.yml,.docker/nginx.prod.conf"
+          target: ${{ secrets.SSH_CONFIG_PATH }}
+          strip_components: 1
 
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@v1.1.0
-      env:
-        MAX_DISK_SIZE: ${{ vars.MAX_DISK_SIZE }}
-        MAX_REPO_SIZE: ${{ vars.MAX_REPO_SIZE }}
-        SYNC_EVERY: ${{ vars.SYNC_EVERY }}
-        USE_FILE_WORKERS: ${{ vars.USE_FILE_WORKERS }}
-        APP_TAG: ${{ github.sha }}
-        SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
-        SSL_PATH: ${{ secrets.SSL_PATH }}
-        API_PAT: ${{ secrets.API_PAT }}
-        
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        envs: MAX_DISK_SIZE,MAX_REPO_SIZE,SYNC_EVERY,USE_FILE_WORKERS,APP_TAG, SSH_CONFIG_PATH, SSL_PATH, API_PAT 
-        script: |
-          cd "$SSH_CONFIG_PATH"
-          docker-compose -f ./docker-compose.prod.yml down
-          docker-compose -f ./docker-compose.prod.yml pull
-          docker-compose -f ./docker-compose.prod.yml up -d
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.1.0
+        env:
+          MAX_DISK_SIZE: ${{ vars.MAX_DISK_SIZE }}
+          MAX_REPO_SIZE: ${{ vars.MAX_REPO_SIZE }}
+          SYNC_EVERY: ${{ vars.SYNC_EVERY }}
+          USE_FILE_WORKERS: ${{ vars.USE_FILE_WORKERS }}
+          APP_TAG: latest
+          SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
+          SSL_PATH: ${{ secrets.SSL_PATH }}
+          API_PAT: ${{ secrets.API_PAT }}
 
-    - name: Verify deployment
-      uses: appleboy/ssh-action@v1.1.0
-      env:
-        SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        envs: SSH_CONFIG_PATH
-        script: |
-          docker ps -a
-          docker-compose -f "${SSH_CONFIG_PATH}/docker-compose.prod.yml" logs app
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: MAX_DISK_SIZE,MAX_REPO_SIZE,SYNC_EVERY,USE_FILE_WORKERS,APP_TAG, SSH_CONFIG_PATH, SSL_PATH, API_PAT
+          script: |
+            cd "$SSH_CONFIG_PATH"
+            docker-compose -f ./docker-compose.prod.yml down
+            docker-compose -f ./docker-compose.prod.yml pull
+            docker-compose -f ./docker-compose.prod.yml up -d
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.1.0
+        env:
+          SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: SSH_CONFIG_PATH
+          script: |
+            docker ps -a
+            docker-compose -f "${SSH_CONFIG_PATH}/docker-compose.prod.yml" logs app
