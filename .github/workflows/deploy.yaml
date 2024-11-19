@@ -19,19 +19,16 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: "${{ github.actor }}/web-git-analyzer"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+          images: "ghcr.io/${{ github.repository_owner }}/web-git-analyzer"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to DockerHub
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.PAT }}
 
       - name: Build and push
@@ -69,7 +66,6 @@ jobs:
           SSH_CONFIG_PATH: ${{ secrets.SSH_CONFIG_PATH }}
           SSL_PATH: ${{ secrets.SSL_PATH }}
           API_PAT: ${{ secrets.API_PAT }}
-
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
